@@ -1,61 +1,62 @@
-let queueCounter = 0;
-
 export default async function handler(req, res) {
-  console.log("✅ /api/send-line hit");
-
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   const { message } = req.body || {};
-  console.log("📨 Received message:", message);
+  if (!message) return res.status(400).json({ error: "No message" });
 
-  if (!message) {
-    return res.status(400).json({ error: "No message" });
-  }
+  // อ่านคิวปัจจุบันจาก ENV
+  let queue = parseInt(process.env.QUEUE_COUNTER || "0", 10);
 
-  // รีคิว
+  // ถ้ามีคนพิมพ์ "รีคิว"
   if (message.trim() === "รีคิว") {
-    queueCounter = 0;
+    await updateEnv("QUEUE_COUNTER", "0");
     await sendLineMessage("✅ รีเซ็ตคิวกลับเป็น 0 แล้ว");
-    return res.status(200).json({ success: true });
+    return res.json({ success: true });
   }
 
-  queueCounter++;
-  const full = `📦 คิวที่ ${queueCounter}\n${message}`;
+  // เพิ่มคิว + อัปเดต ENV
+  queue += 1;
+  await updateEnv("QUEUE_COUNTER", String(queue));
 
-  try {
-    await sendLineMessage(full);
-    console.log("✅ Push OK");
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error("❌ Push Error:", err);
-    return res.status(500).json({ error: err.message });
-  }
+  // ส่งข้อความเข้า LINE
+  const fullMessage = `📦 คิวที่ ${queue}\n${message}`;
+  await sendLineMessage(fullMessage);
+
+  return res.json({ success: true });
 }
 
+// ฟังก์ชันส่งข้อความเข้า LINE
 async function sendLineMessage(text) {
-  const token = process.env.LINE_TOKEN;
-  const userId = process.env.LINE_USER_ID;
-
-  console.log("➡️ Sending to LINE:", userId);
-
-  const r = await fetch("https://api.line.me/v2/bot/message/push", {
+  await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${process.env.LINE_TOKEN}`,
     },
     body: JSON.stringify({
-      to: userId,
-      messages: [{ type: "text", text }]
-    })
+      to: process.env.LINE_USER_ID,
+      messages: [{ type: "text", text }],
+    }),
   });
+}
 
-  const body = await r.text();
-  console.log("🔎 LINE Response:", body);
-
-  if (!r.ok) {
-    throw new Error(body);
-  }
+// ฟังก์ชันอัปเดตค่า ENV ใน Vercel
+async function updateEnv(key, value) {
+  await fetch(
+    `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/env`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        value,
+        id: process.env[`ENV_${key}_ID`],
+        type: "plain",
+      }),
+    }
+  );
 }
