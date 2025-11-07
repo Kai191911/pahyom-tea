@@ -1,33 +1,32 @@
-// api/send-line.js
+// /api/send-line.js
 export default async function handler(req, res) {
-  try {
-    const body = await req.json();  // อ่านข้อมูลที่ส่งมาจากหน้าเว็บ
-    const message = body.message;   // ดึงข้อความที่ต้องการส่งเข้า LINE
-
-    // 🔧 ใส่ token และ userId ของคุณตรงนี้
-    const token = "YOUR_LINE_CHANNEL_ACCESS_TOKEN";
-    const userId = "Ua74514c2f5500bca939e5db00814c436";
-
-    // เรียก API ของ LINE
-    const response = await fetch("https://api.line.me/v2/bot/message/push", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        to: userId,
-        messages: [{ type: "text", text: message }]
-      })
-    });
-
-    if (response.ok) {
-      res.status(200).json({ success: true });
-    } else {
-      const text = await response.text();
-      res.status(500).json({ error: text });
-    }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
+
+  const { message } = req.body;
+
+  const LINE_TOKEN = "ใส่ Channel Access Token ของคุณที่นี่";
+
+  const lineRes = await fetch("https://api.line.me/v2/bot/message/push", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${LINE_TOKEN}`,
+    },
+    body: JSON.stringify({
+      to: "ใส่ userId ของคุณ", // เช่น "Ua74514c2f5500bca939e5db00814c436"
+      messages: [
+        { type: "text", text: message }
+      ],
+    }),
+  });
+
+  if (!lineRes.ok) {
+    const text = await lineRes.text();
+    console.error("LINE API Error:", text);
+    return res.status(500).json({ error: "LINE send failed", detail: text });
+  }
+
+  return res.status(200).json({ success: true });
 }
