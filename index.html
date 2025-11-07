@@ -475,17 +475,12 @@
     `\n\n💰 รวมทั้งหมด: ${payload.total} บาท\n🕓 ${payload.created}`;
 
   // 🚀 เรียก API ของ LINE
-  const res = await fetch("https://api.line.me/v2/bot/message/push", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer 5xb4NTQxMBbeHkKFIkLfpkoIwbaoBpuKrPuI5wEl+9GL2YAMimH6MCZuLInvR7A58jjkhy2pyXW201jWkBXl2CUa8QyylOBZhOkiowVIbGSuZBhgVZQR+TQl4OLTiAp05x1KrF0fFem6wVau85K0zAdB04t89/1O/w1cDnyilFU=" // 👈 ใส่ token จริงของคุณ
-    },
-    body: JSON.stringify({
-      to: "Ua74514c2f5500bca939e5db00814c436", // 👈 ใส่ userId ของคุณ หรือ groupId ถ้าให้ส่งเข้ากลุ่ม
-      messages: [{ type: "text", text: message }]
-    })
-  });
+  const res = await fetch("https://pahyom-tea.vercel.app/api/send-line", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ message })
+});
+
 
   if (res.ok) {
     closeOrder();
@@ -531,3 +526,4 @@
 
 </body>
 </html>
+
