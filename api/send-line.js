@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
 // ฟังก์ชันส่งข้อความไปยัง LINE
 async function sendLineMessage(text) {
-  const token = process.env.LINE_TOKEN; // ใช้ Channel access token ของคุณ
+  const token = process.env.5xb4NTQxMBbeHkKFIkLfpkoIwbaoBpuKrPuI5wEl+9GL2YAMimH6MCZuLInvR7A58jjkhy2pyXW201jWkBXl2CUa8QyylOBZhOkiowVIbGSuZBhgVZQR+TQl4OLTiAp05x1KrF0fFem6wVau85K0zAdB04t89/1O/w1cDnyilFU=; // ใช้ Channel access token ของคุณ
   await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
