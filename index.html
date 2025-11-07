@@ -253,10 +253,6 @@
     <div class="card">
       <h3>สรุปออเดอร์</h3>
       <div class="order-list" id="orderList"></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
-        <input type="text" id="custName" placeholder="ชื่อลูกค้า (ไม่บังคับ)" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6f3e6;">
-        <input type="text" id="custTable" placeholder="โต๊ะ/หมายเหตุ" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6f3e6;">
-      </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
         <div style="font-weight:800;color:var(--green-dark)">รวมทั้งหมด: <span id="finalTotal">0</span> บาท</div>
         <div style="display:flex;gap:8px;">
@@ -268,293 +264,240 @@
   </div>
 
 <script>
-  /* ========== Data model ========== */
-  const MENU = {
-    "ชา": [
-      {name:"ชานม", price:25},
-      {name:"ชาเขียว", price:25},
-      {name:"ชาไทย", price:25},
-      {name:"ชามะนาว", price:28}
-    ],
-    "นม": [
-      {name:"นมสด", price:20},
-      {name:"โกโก้", price:30},
-      {name:"คาราเมลนม", price:30}
-    ],
-    "กาแฟ": [
-      {name:"กาแฟเย็น", price:30},
-      {name:"ลาเต้", price:35},
-      {name:"คาปูชิโน่", price:35}
-    ],
-    "โซดา": [
-      {name:"บลูฮาวายโซดา", price:25},
-      {name:"สตรอว์เบอร์รี่โซดา", price:25},
-      {name:"เลมอนโซดา", price:25}
-    ]
-  };
+/* ========== Data model ========== */
+const MENU = {
+  "ชา": [
+    {name:"ชานม", price:25},
+    {name:"ชาเขียว", price:25},
+    {name:"ชาไทย", price:25},
+    {name:"ชามะนาว", price:28}
+  ],
+  "นม": [
+    {name:"นมสด", price:20},
+    {name:"โกโก้", price:30},
+    {name:"คาราเมลนม", price:30}
+  ],
+  "กาแฟ": [
+    {name:"กาแฟเย็น", price:30},
+    {name:"ลาเต้", price:35},
+    {name:"คาปูชิโน่", price:35}
+  ],
+  "โซดา": [
+    {name:"บลูฮาวายโซดา", price:25},
+    {name:"สตรอว์เบอร์รี่โซดา", price:25},
+    {name:"เลมอนโซดา", price:25}
+  ]
+};
 
-  let currentCategory = 'ชา';
-  let selected = null; // {name, base}
-  let cart = [];
+let currentCategory = 'ชา';
+let selected = null;
+let cart = [];
 
-  /* ========== Init ========= */
-  function init(){
-    renderMenu(currentCategory);
-    document.querySelectorAll('.cat-btn').forEach(btn=>{
-      if(btn.dataset.cat === currentCategory) btn.classList.add('active');
-    });
-  }
+/* ========== Init ========= */
+function init(){
+  renderMenu(currentCategory);
+}
 
-  function selectCategory(e){
-    const btn = e.currentTarget;
-    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    currentCategory = btn.dataset.cat;
-    renderMenu(currentCategory);
-  }
+function selectCategory(e){
+  const btn = e.currentTarget;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentCategory = btn.dataset.cat;
+  renderMenu(currentCategory);
+}
 
-  function renderMenu(cat){
-    const grid = document.getElementById('menuGrid');
-    grid.innerHTML = '';
-    MENU[cat].forEach(item=>{
+function renderMenu(cat){
+  const grid = document.getElementById('menuGrid');
+  grid.innerHTML = '';
+  MENU[cat].forEach(item=>{
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.innerHTML = `
+      <h3>${item.name}</h3>
+      <p>คำอธิบายสั้น ๆ หรือส่วนผสม</p>
+      <div class="price"><div style="font-size:13px;color:#3a6b3f">เริ่มต้น</div><div class="value">${item.price} ฿</div></div>
+    `;
+    el.onclick = ()=> openSheet(item);
+    grid.appendChild(el);
+  });
+}
+
+/* ========== Sheet ========= */
+function openSheet(item){
+  selected = {name:item.name, base:item.price};
+  document.getElementById('sheetTitle').innerText = item.name;
+  document.getElementById('sheetBase').innerText = `ราคาเริ่มต้น: ${item.price} บาท`;
+  document.querySelectorAll('#tempChips .chip').forEach((c,i)=> c.classList.toggle('selected', i===0));
+  document.getElementById('optCream').checked = false;
+  document.querySelectorAll('.top').forEach(t=> t.checked=false);
+  document.getElementById('qtyInput').value = 1;
+  recalc();
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+function closeSheet(){
+  document.getElementById('overlay').style.display = 'none';
+}
+
+function chooseChip(el){
+  document.querySelectorAll('#tempChips .chip').forEach(c=> c.classList.remove('selected'));
+  el.classList.add('selected');
+  recalc();
+}
+
+function getSelectedTemp(){
+  const el = document.querySelector('#tempChips .chip.selected');
+  return {val: el.dataset.val, plus: Number(el.dataset.plus || 0)};
+}
+
+function recalc(){
+  if(!selected) return;
+  const base = selected.base;
+  const temp = getSelectedTemp();
+  const cream = document.getElementById('optCream').checked ? Number(document.getElementById('optCream').dataset.plus || 10) : 0;
+  const toppings = Array.from(document.querySelectorAll('.top:checked')).reduce((s,t)=> s + Number(t.dataset.plus || 5), 0);
+  const qty = Math.max(1, Number(document.getElementById('qtyInput').value || 1));
+  const total = (base + temp.plus + cream + toppings) * qty;
+  document.getElementById('sheetTotal').innerText = `ราคารวม: ${total} บาท`;
+  return total;
+}
+
+function changeQty(delta){
+  const inp = document.getElementById('qtyInput');
+  let v = Math.max(1, Number(inp.value || 1) + delta);
+  inp.value = v;
+  recalc();
+}
+
+/* ========== Cart ========= */
+function addToCart(){
+  if(!selected) return;
+  const temp = getSelectedTemp();
+  const cream = document.getElementById('optCream').checked ? 'ใส่ครีมชีท' : 'ไม่ใส่ครีมชีท';
+  const toppings = Array.from(document.querySelectorAll('.top:checked')).map(t=> t.value);
+  const qty = Math.max(1, Number(document.getElementById('qtyInput').value || 1));
+  const total = recalc();
+  cart.push({name:selected.name, base:selected.base, temp:temp.val, cream, toppings, qty, total});
+  closeSheet();
+  updateCartBar();
+  toast('เพิ่มลงตะกร้าแล้ว ✔️');
+}
+
+function updateCartBar(){
+  const bar = document.getElementById('cartBar');
+  if(cart.length === 0){ bar.style.display='none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('cartCount').innerText = cart.length;
+  document.getElementById('cartShort').innerText = cart.map(c => `${c.name} x${c.qty}`).join(' · ');
+  const sum = cart.reduce((s,c)=> s + c.total,0);
+  document.getElementById('cartShortTotal').innerText = `${sum} บาท`;
+}
+
+function openCart(){
+  const dlg = document.getElementById('orderDialog');
+  const list = document.getElementById('orderList');
+  list.innerHTML = '';
+  if(cart.length === 0){
+    list.innerHTML = '<div style="padding:12px;color:#6b6b6b">ไม่มีสินค้าในตะกร้า</div>';
+  } else {
+    cart.forEach(c=>{
       const el = document.createElement('div');
-      el.className = 'card';
-      el.innerHTML = `
-        <h3>${item.name}</h3>
-        <p>คำอธิบายสั้น ๆ หรือส่วนผสม</p>
-        <div class="price"><div style="font-size:13px;color:#3a6b3f">เริ่มต้น</div><div class="value">${item.price} ฿</div></div>
-      `;
-      el.onclick = ()=> openSheet(item);
-      grid.appendChild(el);
+      el.style.padding='8px';
+      el.style.borderBottom='1px dashed #e6f3e6';
+      el.innerHTML = `<div style="font-weight:700">${c.name} x${c.qty} <span style="float:right;color:#2f6b34">${c.total} ฿</span></div>
+      <div style="font-size:13px;color:#47674f">${c.temp} · ${c.cream} · ${c.toppings.length? c.toppings.join(', '):'ไม่มีท็อปปิ้ง'}</div>`;
+      list.appendChild(el);
     });
   }
+  document.getElementById('finalTotal').innerText = cart.reduce((s,c)=> s + c.total,0);
+  dlg.style.display='flex';
+}
 
-  /* ========== Sheet (selection) ========= */
-  function openSheet(item){
-    selected = {name:item.name, base:item.price};
-    // reset options
-    document.getElementById('sheetTitle').innerText = item.name;
-    document.getElementById('sheetBase').innerText = `ราคาเริ่มต้น: ${item.price} บาท`;
-    // temp chips: reset
-    document.querySelectorAll('#tempChips .chip').forEach((c,i)=> {
-      c.classList.toggle('selected', i===0);
-    });
-    document.getElementById('optCream').checked = false;
-    document.querySelectorAll('.top').forEach(t=> t.checked=false);
-    document.getElementById('qtyInput').value = 1;
-    recalc();
-    document.getElementById('overlay').style.display = 'flex';
-    // ensure focus mobile-friendly
-    setTimeout(()=> window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}), 120);
-  }
+function closeOrder(){
+  document.getElementById('orderDialog').style.display='none';
+}
 
-  function closeSheet(){
-    document.getElementById('overlay').style.display = 'none';
-  }
-
-  function chooseChip(el, group){
-    if(group === 'temp'){
-      document.querySelectorAll('#tempChips .chip').forEach(c=> c.classList.remove('selected'));
-      el.classList.add('selected');
-      recalc();
-    }
-  }
-
-  function getSelectedTemp(){
-    const el = document.querySelector('#tempChips .chip.selected');
-    return {val: el.dataset.val, plus: Number(el.dataset.plus || 0)};
-  }
-
-  function recalc(){
-    if(!selected) return;
-    const base = selected.base;
-    const temp = getSelectedTemp();
-    const cream = document.getElementById('optCream').checked ? Number(document.getElementById('optCream').dataset.plus || 10) : 0;
-    // note: we set data-plus on checkbox already (10)
-    const toppings = Array.from(document.querySelectorAll('.top:checked')).reduce((s,t)=> s + Number(t.dataset.plus || 5), 0);
-    const qty = Math.max(1, Number(document.getElementById('qtyInput').value || 1));
-    // compute
-    const total = (base + temp.plus + cream + toppings) * qty;
-    document.getElementById('sheetTotal').innerText = `ราคารวม: ${total} บาท`;
-    return total;
-  }
-
-  function changeQty(delta){
-    const inp = document.getElementById('qtyInput');
-    let v = Math.max(1, Number(inp.value || 1) + delta);
-    inp.value = v;
-    recalc();
-  }
-
-  /* ========== Cart ========= */
-  function addToCart(){
-    if(!selected) return;
-    const temp = getSelectedTemp();
-    const cream = document.getElementById('optCream').checked ? 'ใส่ครีมชีท' : 'ไม่ใส่ครีมชีท';
-    const toppings = Array.from(document.querySelectorAll('.top:checked')).map(t=> t.value);
-    const qty = Math.max(1, Number(document.getElementById('qtyInput').value || 1));
-    const total = recalc();
-    const entry = {
-      name: selected.name,
-      base: selected.base,
-      temp: temp.val,
-      cream: cream,
-      toppings: toppings,
-      qty: qty,
-      total: total
-    };
-    cart.push(entry);
-    closeSheet();
-    updateCartBar();
-    toast('เพิ่มลงตะกร้าแล้ว ✔️');
-  }
-
-  function updateCartBar(){
-    const bar = document.getElementById('cartBar');
-    if(cart.length === 0){
-      bar.style.display = 'none';
-      return;
-    }
-    bar.style.display = 'flex';
-    document.getElementById('cartCount').innerText = cart.length;
-    let short = cart.map(c => `${c.name} x${c.qty}`).join(' · ');
-    document.getElementById('cartShort').innerText = short;
-    const sum = cart.reduce((s,c)=> s + c.total,0);
-    document.getElementById('cartShortTotal').innerText = `${sum} บาท`;
-    document.getElementById('cartCount').style.background = 'linear-gradient(90deg,' + getComputedStyle(document.documentElement).getPropertyValue('--accent') + ', #b7862f)';
-  }
-
-  function openCart(){
-    // populate order dialog
-    const dlg = document.getElementById('orderDialog');
-    const list = document.getElementById('orderList');
-    list.innerHTML = '';
-    if(cart.length === 0){
-      list.innerHTML = '<div style="padding:12px;color:#6b6b6b">ไม่มีสินค้าในตะกร้า</div>';
-    } else {
-      cart.forEach((c,i)=>{
-        const el = document.createElement('div');
-        el.style.padding = '8px';
-        el.style.borderBottom = '1px dashed #e6f3e6';
-        el.innerHTML = `<div style="font-weight:700">${c.name} x${c.qty} <span style="float:right;color:#2f6b34">${c.total} ฿</span></div>
-          <div style="font-size:13px;color:#47674f">${c.temp} · ${c.cream} · ${c.toppings.length? c.toppings.join(', '):'ไม่มีท็อปปิ้ง'}</div>`;
-        list.appendChild(el);
-      });
-    }
-    const final = cart.reduce((s,c)=> s + c.total,0);
-    document.getElementById('finalTotal').innerText = final;
-    dlg.style.display = 'flex';
-  }
-
-  function closeOrder(){
-    document.getElementById('orderDialog').style.display = 'none';
-  }
-
-// ========== Message Queue System ==========
+/* ========== Message Queue System ========== */
 const messageQueue = [];
 let sending = false;
 
-async function queueMessage(message) {
+async function queueMessage(message){
   messageQueue.push(message);
-  if (!sending) processQueue();
+  if(!sending) processQueue();
 }
 
-async function processQueue() {
-  if (sending) return;
+async function processQueue(){
+  if(sending) return;
   sending = true;
-
-  while (messageQueue.length > 0) {
+  while(messageQueue.length>0){
     const msg = messageQueue.shift();
-    await sendToLine(msg);
-    await new Promise(r => setTimeout(r, 500)); // หน่วง 1 วิ กันยิงเร็วเกิน
+    try {
+      await sendToLine(msg);
+    } catch(err){
+      console.error("❌ Error sending:", err);
+    }
+    await new Promise(r=>setTimeout(r,500));
   }
-
   sending = false;
 }
 
-async function sendToLine(message) {
-  const res = await fetch("https://pahyom-tea.vercel.app/api/send-line", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message })
+async function sendToLine(message){
+  const res = await fetch("/api/send-line", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({message})
   });
-  if (!res.ok) {
-    console.error("❌ ส่งไม่สำเร็จ:", await res.text());
-  } else {
-    console.log("✅ ส่งสำเร็จ:", message);
-  }
+  if(!res.ok) console.error("❌ ส่งไม่สำเร็จ:", await res.text());
+  else console.log("✅ ส่งสำเร็จ:", message);
 }
 
-
-// ========== ฟังก์ชันส่งออเดอร์ ==========
-async function sendOrder() {
+/* ========== ส่งออเดอร์ ========== */
+async function sendOrder(){
   const payload = {
-    items: cart.map(c => ({
-      name: c.name,
-      qty: c.qty,
-      temp: c.temp,
-      cream: c.cream,
-      toppings: c.toppings,
-      price: c.total
+    items: cart.map(c=>({
+      name:c.name, qty:c.qty, temp:c.temp, cream:c.cream, toppings:c.toppings, price:c.total
     })),
-    total: cart.reduce((s, c) => s + c.total, 0),
+    total: cart.reduce((s,c)=> s+c.total,0),
     created: new Date().toLocaleString('th-TH')
   };
 
-  // 🧋 สร้างข้อความออเดอร์
-  let message =
+  // 🧋 สร้างข้อความออเดอร์ (ไม่ต้องใส่คิวลูกค้า — server จะจัดการ)
+  const message =
     payload.items.map(i =>
       `• ${i.name} (${i.temp}) x${i.qty}\n  ${i.cream} ${i.toppings.length ? '· ' + i.toppings.join(', ') : ''}\n  💵 ${i.price} บาท`
     ).join('\n\n') +
     `\n\n💰 รวมทั้งหมด: ${payload.total} บาท\n🕓 ${payload.created}`;
 
-  // 🪄 เพิ่มคิวลูกค้า
-  const queuePosition = messageQueue.length + 1;
-  message = `📦 คิวลูกค้า ${queuePosition}\n\n${message}`;
-
-  // ✅ ส่งเข้าคิวแทนการยิงตรง
   await queueMessage(message);
 
-  // ล้างข้อมูลและปิดหน้าสรุป
   closeOrder();
   cart = [];
   updateCartBar();
   showSummary(payload);
 }
 
-
-function showSummary(payload) {
+/* ========== สรุปหลังส่งออเดอร์ ========== */
+function showSummary(payload){
   const box = document.createElement('div');
   box.className = 'card';
-  box.style.position = 'fixed';
-  box.style.left = '6%';
-  box.style.right = '6%';
-  box.style.top = '14%';
-  box.style.zIndex = '120';
-  box.innerHTML = `
-    <h3>รับออเดอร์เรียบร้อย 🎉</h3>
+  box.style.position='fixed'; box.style.left='6%'; box.style.right='6%'; box.style.top='14%';
+  box.style.zIndex='120';
+  box.innerHTML = `<h3>สั่งซื้อเรียบร้อย 🎉</h3>
     <div style="margin-top:8px;font-weight:700">รวมทั้งหมด: ${payload.total} บาท</div>
     <div style="font-size:13px;color:#3a6b3f;margin-top:8px">เวลาที่บันทึก: ${payload.created}</div>
-    <div style="margin-top:12px"><button onclick="this.parentElement.parentElement.remove()">ปิด</button></div>
-  `;
+    <div style="margin-top:12px"><button onclick="this.parentElement.parentElement.remove()">ปิด</button></div>`;
   document.body.appendChild(box);
-  setTimeout(() => { if (box.parentElement) box.remove(); }, 6000);
+  setTimeout(()=>{ if(box.parentElement) box.remove(); },6000);
 }
 
+/* ========== Toast ========= */
+function toast(txt){
+  const t=document.createElement('div');
+  t.style.position='fixed';t.style.bottom='90px';t.style.left='50%';t.style.transform='translateX(-50%)';
+  t.style.background='rgba(0,0,0,0.7)';t.style.color='#fff';t.style.padding='10px 14px';t.style.borderRadius='12px';
+  t.style.fontWeight='700';t.style.zIndex=200;t.innerText=txt;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),1800);
+}
 
-  /* ========== small helpers ========== */
-  function toast(txt){
-    const t = document.createElement('div');
-    t.style.position='fixed'; t.style.bottom='90px'; t.style.left='50%'; t.style.transform='translateX(-50%)';
-    t.style.background='rgba(0,0,0,0.7)'; t.style.color='#fff'; t.style.padding='10px 14px'; t.style.borderRadius='12px'; t.style.zIndex=200;
-    t.style.fontWeight='700'; t.innerText = txt;
-    document.body.appendChild(t);
-    setTimeout(()=> t.remove(), 1800);
-  }
-
-  // Initialize on load
-  window.addEventListener('load', init);
+window.addEventListener('load',init);
 </script>
-
-</body>
-</html>
