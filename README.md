@@ -1,1 +1,504 @@
-# pahyom-tea
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ร้านน้ำชาพะยอม — ตู้เต่าบิน (มือถือ)</title>
+
+  <style>
+    /* ========== Theme & base ========= */
+    :root{
+      --green-dark: #2f6b34;
+      --green-mid: #4fb64f;
+      --green-soft: #e9f6ea;
+      --cream: #f6fbf6;
+      --accent: #84ff9f;
+      --text: #213826;
+      --card-shadow: 0 8px 24px rgba(47,107,52,0.12);
+      --glass: rgba(255,255,255,0.85);
+    }
+
+    html,body{height:100%;margin:0;font-family: "Prompt", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:var(--text); background:linear-gradient(180deg,#f2fbf3 0%,#e8f6ea 100%); -webkit-font-smoothing:antialiased;}
+
+    /* ========== Header (like kiosk top) ========= */
+    header{
+      position:sticky; top:0; z-index:50;
+      background: linear-gradient(90deg,var(--green-dark),var(--green-mid));
+      color:#fff;
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      box-shadow: 0 6px 18px rgba(47,107,52,0.18);
+    }
+    .logo {
+      width:44px;height:44px;border-radius:10px;
+      background:linear-gradient(180deg,#fff6e6,#fff0d1);
+      display:flex;align-items:center;justify-content:center;color:var(--green-dark);
+      font-weight:700; box-shadow: inset 0 -6px 12px rgba(0,0,0,0.04);
+    }
+    header h1{font-size:18px;margin:0;letter-spacing:0.6px;}
+    header p{margin:0;font-size:12px;opacity:0.95;}
+
+    /* ========== Category scroller ========= */
+    .categories{
+      display:flex; gap:10px; overflow-x:auto; padding:12px;
+      background: linear-gradient(180deg,var(--green-soft),transparent);
+      -webkit-overflow-scrolling:touch;
+    }
+    .cat-btn{
+      flex:0 0 auto;
+      background:var(--glass);
+      border:1px solid rgba(47,107,52,0.08);
+      padding:10px 14px;
+      border-radius:14px;
+      font-weight:600;
+      color:var(--green-dark);
+      cursor:pointer;
+      box-shadow: 0 6px 14px rgba(47,107,52,0.06);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .cat-btn:active{ transform: translateY(2px); }
+    .cat-btn.active{ background: linear-gradient(90deg,#ffffff,#f3fff3); border:1px solid var(--green-mid); box-shadow: 0 8px 20px rgba(79,182,79,0.12); }
+
+    /* ========== Menu cards ========= */
+    main{padding:14px;}
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(160px,1fr));
+      gap:12px;
+    }
+    .card{
+      background: linear-gradient(180deg,#ffffff,#fbfff9);
+      border-radius:14px;
+      padding:12px;
+      box-shadow: var(--card-shadow);
+      display:flex; flex-direction:column; gap:8px;
+      cursor:pointer;
+      border: 1px solid rgba(47,107,52,0.04);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .card:active{ transform: translateY(3px); }
+    .card h3{margin:0;font-size:15px;color:var(--green-dark);}
+    .card p{margin:0;font-size:13px;color:#476b50; opacity:0.95;}
+    .price{
+      margin-top:auto;
+      display:flex;justify-content:space-between;align-items:center;
+      gap:8px;
+    }
+    .price .value{
+      background: linear-gradient(90deg,var(--green-mid),#2f8f35);
+      color:#fff;padding:6px 10px;border-radius:10px;font-weight:700;font-size:14px;
+      box-shadow: 0 6px 12px rgba(47,107,52,0.12);
+    }
+
+    /* ========== Modal (selection) ========= */
+    .overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:flex-end; justify-content:center;
+      z-index:80; -webkit-backdrop-filter: blur(4px);
+    }
+    .sheet{
+      width:100%; max-width:520px; background:#fff; border-top-left-radius:18px; border-top-right-radius:18px;
+      padding:14px 16px 30px; box-shadow: 0 -8px 30px rgba(0,0,0,0.18);
+    }
+    .sheet header{display:flex;gap:10px;align-items:center;}
+    .sheet h2{margin:0;font-size:18px;color:var(--green-dark);}
+    .close-x{margin-left:auto;background:#f6f6f6;border-radius:10px;padding:6px;cursor:pointer;}
+    .choice-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
+    .chip{
+      padding:8px 10px;border-radius:12px;background:#f8fff8;border:1px solid #e6f3e6; cursor:pointer;font-weight:600;color:var(--green-dark);
+    }
+    .chip.selected{background:linear-gradient(90deg,var(--green-mid),#3fa84a); color:#fff; box-shadow:0 8px 18px rgba(79,182,79,0.14);}
+    .label{font-size:13px;color:#2f4f36;margin:10px 0 6px;font-weight:600;}
+
+    /* checkboxes style */
+    .option {display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;background:#fbfff9;border:1px solid #eef7ee;margin:6px 0;}
+    .option input[type="checkbox"], .option input[type="radio"]{width:18px;height:18px;accent-color:var(--green-mid);}
+
+    .qty{
+      display:flex;gap:8px;align-items:center;
+    }
+    .qty button{padding:6px 10px;border-radius:8px;border:none;background:var(--green-mid);color:#fff;font-weight:700;cursor:pointer;}
+    .qty input{width:64px;padding:8px;border-radius:8px;border:1px solid #e6f3e6;text-align:center;}
+
+    .sheet .bottom-row{display:flex;gap:10px;align-items:center;margin-top:12px;}
+    .sheet .total{margin-left:auto;font-weight:800;color:var(--green-dark);}
+
+    /* ========== Cart bar (footer) ========= */
+    .cart-bar{
+      position:fixed; left:12px; right:12px; bottom:14px; z-index:70;
+      display:flex; gap:10px; align-items:center;
+    }
+    .cart-preview{
+      flex:1;background:linear-gradient(180deg,#ffffff,#f8fff8);padding:12px;border-radius:12px;box-shadow:var(--card-shadow);
+      display:flex;align-items:center;gap:8px;border:1px solid rgba(47,107,52,0.06);
+    }
+    .cart-preview .count{background:var(--accent); color:#fff;padding:6px 10px;border-radius:10px;font-weight:700;}
+    .cart-preview .summary{font-size:14px;color:#234b2b;font-weight:700;}
+
+    .cart-actions button{ padding:12px 14px;border-radius:12px;border:none;background:linear-gradient(90deg,var(--green-dark),var(--green-mid)); color:#fff;font-weight:800; cursor:pointer; box-shadow:0 10px 24px rgba(47,107,52,0.12);}
+    .cart-actions button.secondary{ background:#fff;border:1px solid #e6f3e6;color:var(--green-dark);font-weight:700;box-shadow:none; }
+
+    /* ========== Order summary modal ========= */
+    .dialog{
+      position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none;align-items:center;justify-content:center; z-index:100;
+    }
+    .dialog .card{
+      width:92%; max-width:480px; padding:16px; border-radius:14px;
+    }
+    .order-list{max-height:300px; overflow:auto; margin:8px 0; padding:6px; border-radius:8px; background:#fbfff8;}
+
+    /* responsive tweaks */
+    @media(min-width:510px){
+      header h1{font-size:20px;}
+      .sheet{border-radius:12px;}
+      .cart-bar{max-width:520px;left:auto;right:auto;bottom:20px; margin:0 auto;}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">พย</div>
+    <div>
+      <h1>ร้านน้ำชาพะยอม</h1>
+      <p style="margin-top:4px;font-size:12px;opacity:0.95">ตู้เต่าบิน — สั่งง่ายบนมือถือ</p>
+    </div>
+  </header>
+
+  <!-- Categories -->
+  <div class="categories" id="cats">
+    <button class="cat-btn active" data-cat="ชา" onclick="selectCategory(event)">ชา</button>
+    <button class="cat-btn" data-cat="นม" onclick="selectCategory(event)">นม / โกโก้ / คาราเมล</button>
+    <button class="cat-btn" data-cat="กาแฟ" onclick="selectCategory(event)">กาแฟ</button>
+    <button class="cat-btn" data-cat="โซดา" onclick="selectCategory(event)">โซดา</button>
+  </div>
+
+  <!-- Menu -->
+  <main>
+    <div class="grid" id="menuGrid"></div>
+  </main>
+
+  <!-- Selection sheet (bottom modal) -->
+  <div class="overlay" id="overlay">
+    <div class="sheet" role="dialog" aria-modal="true" id="sheet">
+      <header>
+        <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(180deg,#fff,#f6fff6);display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-weight:700">แก้ว</div>
+        <div>
+          <h2 id="sheetTitle">ชื่อเมนู</h2>
+          <div style="font-size:13px;color:#49664a" id="sheetBase">ราคาเริ่มต้น: 0 บาท</div>
+        </div>
+        <div class="close-x" onclick="closeSheet()">✕</div>
+      </header>
+
+      <!-- Temp -->
+      <div class="label">อุณหภูมิ</div>
+      <div class="choice-row" id="tempChips">
+        <div class="chip selected" data-plus="0" data-val="ร้อน" onclick="chooseChip(this,'temp')">ร้อน</div>
+        <div class="chip" data-plus="5" data-val="เย็น" onclick="chooseChip(this,'temp')">เย็น +5</div>
+        <div class="chip" data-plus="10" data-val="ปั่น" onclick="chooseChip(this,'temp')">ปั่น +10</div>
+      </div>
+
+      <!-- Cream -->
+      <div class="label">ครีมชีท</div>
+      <div class="choice-row">
+        <label class="option"><input type="checkbox" id="optCream" data-plus="10" onchange="recalc()"> ใส่ครีมชีท (+10)</label>
+      </div>
+
+      <!-- Toppings -->
+      <div class="label">ท็อปปิ้ง</div>
+      <div class="choice-row">
+        <label class="option"><input type="checkbox" class="top" value="ไข่มุก" data-plus="5" onchange="recalc()"> ไข่มุก (+5)</label>
+        <label class="option"><input type="checkbox" class="top" value="บุก" data-plus="5" onchange="recalc()"> บุก (+5)</label>
+        <label class="option"><input type="checkbox" class="top" value="เจลลี่" data-plus="5" onchange="recalc()"> เจลลี่ (+5)</label>
+      </div>
+
+      <!-- Quantity & total -->
+      <div class="label">จำนวนแก้ว</div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:6px;">
+        <div class="qty">
+          <button onclick="changeQty(-1)">−</button>
+          <input type="number" id="qtyInput" value="1" min="1" onchange="recalc()" />
+          <button onclick="changeQty(1)">+</button>
+        </div>
+        <div class="total" id="sheetTotal">ราคารวม: 0 บาท</div>
+      </div>
+
+      <div class="bottom-row">
+        <button class="secondary" onclick="closeSheet()">ยกเลิก</button>
+        <div style="flex:1"></div>
+        <button onclick="addToCart()">ใส่ตะกร้า · เพิ่ม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart preview (fixed footer) -->
+  <div class="cart-bar" id="cartBar" style="display:none;">
+    <div class="cart-preview" onclick="openCart()">
+      <div class="count" id="cartCount">0</div>
+      <div class="summary">
+        <div id="cartShort">ไม่มีสินค้า</div>
+        <div style="font-size:12px;color:#3d6b45" id="cartShortTotal">0 บาท</div>
+      </div>
+    </div>
+    <div class="cart-actions">
+      <button class="secondary" onclick="openCart()">ดูตะกร้า</button>
+      <button onclick="openCart()">ส่งออเดอร์</button>
+    </div>
+  </div>
+
+  <!-- Order dialog -->
+  <div class="dialog" id="orderDialog">
+    <div class="card">
+      <h3>สรุปออเดอร์</h3>
+      <div class="order-list" id="orderList"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+        <input type="text" id="custName" placeholder="ชื่อลูกค้า (ไม่บังคับ)" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6f3e6;">
+        <input type="text" id="custTable" placeholder="โต๊ะ/หมายเหตุ" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6f3e6;">
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+        <div style="font-weight:800;color:var(--green-dark)">รวมทั้งหมด: <span id="finalTotal">0</span> บาท</div>
+        <div style="display:flex;gap:8px;">
+          <button class="secondary" onclick="closeOrder()">ยกเลิก</button>
+          <button onclick="sendOrder()">ยืนยัน & ส่ง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  /* ========== Data model ========== */
+  const MENU = {
+    "ชา": [
+      {name:"ชานม", price:25},
+      {name:"ชาเขียว", price:25},
+      {name:"ชาไทย", price:25},
+      {name:"ชามะนาว", price:28}
+    ],
+    "นม": [
+      {name:"นมสด", price:20},
+      {name:"โกโก้", price:30},
+      {name:"คาราเมลนม", price:30}
+    ],
+    "กาแฟ": [
+      {name:"กาแฟเย็น", price:30},
+      {name:"ลาเต้", price:35},
+      {name:"คาปูชิโน่", price:35}
+    ],
+    "โซดา": [
+      {name:"บลูฮาวายโซดา", price:25},
+      {name:"สตรอว์เบอร์รี่โซดา", price:25},
+      {name:"เลมอนโซดา", price:25}
+    ]
+  };
+
+  let currentCategory = 'ชา';
+  let selected = null; // {name, base}
+  let cart = [];
+
+  /* ========== Init ========= */
+  function init(){
+    renderMenu(currentCategory);
+    document.querySelectorAll('.cat-btn').forEach(btn=>{
+      if(btn.dataset.cat === currentCategory) btn.classList.add('active');
+    });
+  }
+
+  function selectCategory(e){
+    const btn = e.currentTarget;
+    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCategory = btn.dataset.cat;
+    renderMenu(currentCategory);
+  }
+
+  function renderMenu(cat){
+    const grid = document.getElementById('menuGrid');
+    grid.innerHTML = '';
+    MENU[cat].forEach(item=>{
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `
+        <h3>${item.name}</h3>
+        <p>คำอธิบายสั้น ๆ หรือส่วนผสม</p>
+        <div class="price"><div style="font-size:13px;color:#3a6b3f">เริ่มต้น</div><div class="value">${item.price} ฿</div></div>
+      `;
+      el.onclick = ()=> openSheet(item);
+      grid.appendChild(el);
+    });
+  }
+
+  /* ========== Sheet (selection) ========= */
+  function openSheet(item){
+    selected = {name:item.name, base:item.price};
+    // reset options
+    document.getElementById('sheetTitle').innerText = item.name;
+    document.getElementById('sheetBase').innerText = `ราคาเริ่มต้น: ${item.price} บาท`;
+    // temp chips: reset
+    document.querySelectorAll('#tempChips .chip').forEach((c,i)=> {
+      c.classList.toggle('selected', i===0);
+    });
+    document.getElementById('optCream').checked = false;
+    document.querySelectorAll('.top').forEach(t=> t.checked=false);
+    document.getElementById('qtyInput').value = 1;
+    recalc();
+    document.getElementById('overlay').style.display = 'flex';
+    // ensure focus mobile-friendly
+    setTimeout(()=> window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}), 120);
+  }
+
+  function closeSheet(){
+    document.getElementById('overlay').style.display = 'none';
+  }
+
+  function chooseChip(el, group){
+    if(group === 'temp'){
+      document.querySelectorAll('#tempChips .chip').forEach(c=> c.classList.remove('selected'));
+      el.classList.add('selected');
+      recalc();
+    }
+  }
+
+  function getSelectedTemp(){
+    const el = document.querySelector('#tempChips .chip.selected');
+    return {val: el.dataset.val, plus: Number(el.dataset.plus || 0)};
+  }
+
+  function recalc(){
+    if(!selected) return;
+    const base = selected.base;
+    const temp = getSelectedTemp();
+    const cream = document.getElementById('optCream').checked ? Number(document.getElementById('optCream').dataset.plus || 10) : 0;
+    // note: we set data-plus on checkbox already (10)
+    const toppings = Array.from(document.querySelectorAll('.top:checked')).reduce((s,t)=> s + Number(t.dataset.plus || 5), 0);
+    const qty = Math.max(1, Number(document.getElementById('qtyInput').value || 1));
+    // compute
+    const total = (base + temp.plus + cream + toppings) * qty;
+    document.getElementById('sheetTotal').innerText = `ราคารวม: ${total} บาท`;
+    return total;
+  }
+
+  function changeQty(delta){
+    const inp = document.getElementById('qtyInput');
+    let v = Math.max(1, Number(inp.value || 1) + delta);
+    inp.value = v;
+    recalc();
+  }
+
+  /* ========== Cart ========= */
+  function addToCart(){
+    if(!selected) return;
+    const temp = getSelectedTemp();
+    const cream = document.getElementById('optCream').checked ? 'ใส่ครีมชีท' : 'ไม่ใส่ครีมชีท';
+    const toppings = Array.from(document.querySelectorAll('.top:checked')).map(t=> t.value);
+    const qty = Math.max(1, Number(document.getElementById('qtyInput').value || 1));
+    const total = recalc();
+    const entry = {
+      name: selected.name,
+      base: selected.base,
+      temp: temp.val,
+      cream: cream,
+      toppings: toppings,
+      qty: qty,
+      total: total
+    };
+    cart.push(entry);
+    closeSheet();
+    updateCartBar();
+    toast('เพิ่มลงตะกร้าแล้ว ✔️');
+  }
+
+  function updateCartBar(){
+    const bar = document.getElementById('cartBar');
+    if(cart.length === 0){
+      bar.style.display = 'none';
+      return;
+    }
+    bar.style.display = 'flex';
+    document.getElementById('cartCount').innerText = cart.length;
+    let short = cart.map(c => `${c.name} x${c.qty}`).join(' · ');
+    document.getElementById('cartShort').innerText = short;
+    const sum = cart.reduce((s,c)=> s + c.total,0);
+    document.getElementById('cartShortTotal').innerText = `${sum} บาท`;
+    document.getElementById('cartCount').style.background = 'linear-gradient(90deg,' + getComputedStyle(document.documentElement).getPropertyValue('--accent') + ', #b7862f)';
+  }
+
+  function openCart(){
+    // populate order dialog
+    const dlg = document.getElementById('orderDialog');
+    const list = document.getElementById('orderList');
+    list.innerHTML = '';
+    if(cart.length === 0){
+      list.innerHTML = '<div style="padding:12px;color:#6b6b6b">ไม่มีสินค้าในตะกร้า</div>';
+    } else {
+      cart.forEach((c,i)=>{
+        const el = document.createElement('div');
+        el.style.padding = '8px';
+        el.style.borderBottom = '1px dashed #e6f3e6';
+        el.innerHTML = `<div style="font-weight:700">${c.name} x${c.qty} <span style="float:right;color:#2f6b34">${c.total} ฿</span></div>
+          <div style="font-size:13px;color:#47674f">${c.temp} · ${c.cream} · ${c.toppings.length? c.toppings.join(', '):'ไม่มีท็อปปิ้ง'}</div>`;
+        list.appendChild(el);
+      });
+    }
+    const final = cart.reduce((s,c)=> s + c.total,0);
+    document.getElementById('finalTotal').innerText = final;
+    dlg.style.display = 'flex';
+  }
+
+  function closeOrder(){
+    document.getElementById('orderDialog').style.display = 'none';
+  }
+
+  function sendOrder(){
+    // build payload (for now: show summary and console.log)
+    const name = document.getElementById('custName').value || '-';
+    const note = document.getElementById('custTable').value || '-';
+    const payload = {
+      shop: "ร้านน้ำชาพะยอม",
+      customer: name,
+      note: note,
+      items: cart.map(c=> ({name:c.name, qty:c.qty, temp:c.temp, cream:c.cream, toppings:c.toppings, price:c.total})),
+      total: cart.reduce((s,c)=> s + c.total,0),
+      created: new Date().toLocaleString('th-TH')
+    };
+    // display friendly message
+    closeOrder();
+    cart = [];
+    updateCartBar();
+    console.log("ส่งออเดอร์ (ตัวอย่าง payload):", payload);
+    showSummary(payload);
+  }
+
+  function showSummary(payload){
+    // render a friendly message on screen
+    const box = document.createElement('div');
+    box.className = 'card';
+    box.style.position = 'fixed'; box.style.left='6%'; box.style.right='6%'; box.style.top='14%';
+    box.style.zIndex = '120';
+    box.innerHTML = `<h3>สั่งซื้อเรียบร้อย 🎉</h3>
+      <div style="font-size:14px;margin-top:6px">ขอบคุณคุณ <strong>${payload.customer}</strong></div>
+      <div style="margin-top:8px;font-weight:700">รวมทั้งหมด: ${payload.total} บาท</div>
+      <div style="font-size:13px;color:#3a6b3f;margin-top:8px">เวลาที่บันทึก: ${payload.created}</div>
+      <div style="margin-top:12px"><button onclick="this.parentElement.parentElement.remove()">ปิด</button></div>`;
+    document.body.appendChild(box);
+    // auto dismiss after 6s
+    setTimeout(()=>{ if(box.parentElement) box.remove(); }, 6000);
+  }
+
+  /* ========== small helpers ========== */
+  function toast(txt){
+    const t = document.createElement('div');
+    t.style.position='fixed'; t.style.bottom='90px'; t.style.left='50%'; t.style.transform='translateX(-50%)';
+    t.style.background='rgba(0,0,0,0.7)'; t.style.color='#fff'; t.style.padding='10px 14px'; t.style.borderRadius='12px'; t.style.zIndex=200;
+    t.style.fontWeight='700'; t.innerText = txt;
+    document.body.appendChild(t);
+    setTimeout(()=> t.remove(), 1800);
+  }
+
+  // Initialize on load
+  window.addEventListener('load', init);
+</script>
+
+</body>
+</html>
