@@ -1,48 +1,53 @@
-// /api/send-line.js
-let queueCounter = 0; // ตัวนับคิว (global)
+let queueCounter = 0;
 
 export default async function handler(req, res) {
-  try {
-    const { message, userId } = req.body; // รับ message และ userId จาก request
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res.status(405).json({ success: false, message: `Method ${req.method} Not Allowed` });
+  }
 
-    // ตรวจสอบว่าเป็นคำสั่งรีเซ็ตจากผู้อนุญาต
-    if (
-      message &&
-      message.trim() === "รีคิว" &&
-      userId === "Ua74514c2f5500bca939e5db00814c436"
-    ) {
-      queueCounter = 0;
-      await sendLineMessage("🔁 ระบบรีเซ็ตคิวกลับเป็น 0 แล้ว");
-      return res.status(200).json({ success: true, message: "Queue reset" });
+  try {
+    const { events } = req.body;
+
+    for (const event of events) {
+      if (event.type === "message" && event.message.type === "text") {
+        const userMessage = event.message.text.trim();
+        const replyToken = event.replyToken;
+
+        if (userMessage === "รีคิว") {
+          queueCounter = 0;
+          await replyLineMessage(replyToken, "🔁 ระบบรีเซ็ตคิวกลับเป็น 0 แล้ว");
+        } else {
+          queueCounter += 1;
+          const messageWithQueue = `📦 คิวที่ ${queueCounter}\n${userMessage}`;
+          await replyLineMessage(replyToken, messageWithQueue);
+        }
+      }
     }
 
-    // ถ้าไม่ใช่คำสั่งรีเซ็ต ก็ไม่ทำอะไร
-    res.status(200).json({ success: true, message: "No action taken" });
+    res.status(200).json({ success: true });
   } catch (err) {
-    console.error("Error in send-line.js:", err);
+    console.error(err);
     res.status(500).json({ success: false, error: err.message });
   }
 }
 
-// ฟังก์ชันส่งข้อความไปยัง LINE
-async function sendLineMessage(text) {
-  const token = process.env.LINE_TOKEN; // เก็บใน .env
-  const userId = "Ua74514c2f5500bca939e5db00814c436"; // User ของคุณ
-
-  const response = await fetch("https://api.line.me/v2/bot/message/push", {
+async function replyLineMessage(replyToken, text) {
+  const token = process.env.LINE_TOKEN;
+  const res = await fetch("https://api.line.me/v2/bot/message/reply", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      to: userId,
-      messages: [{ type: "text", text }]
-    })
+      replyToken,
+      messages: [{ type: "text", text }],
+    }),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("LINE API error:", errorText);
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("LINE reply API error:", errorText);
   }
 }
