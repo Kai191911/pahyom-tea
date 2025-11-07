@@ -1,23 +1,23 @@
 // /api/send-line.js
-let queueCounter = 0; // ตัวนับคิว (เก็บไว้ระดับ global)
+let queueCounter = 0; // ตัวนับคิว (global)
 
 export default async function handler(req, res) {
   try {
-    const { message } = req.body;
+    const { message, userId } = req.body; // รับ message และ userId จาก request
 
-    // ถ้ามีการพิมพ์ "รีคิว" จากไลน์
-    if (message && (message.trim() === "รีคิว" || message.trim().toLowerCase() === "reset queue")) {
+    // ตรวจสอบว่าเป็นคำสั่งรีเซ็ตจากผู้อนุญาต
+    if (
+      message &&
+      message.trim() === "รีคิว" &&
+      userId === "Ua74514c2f5500bca939e5db00814c436"
+    ) {
       queueCounter = 0;
       await sendLineMessage("🔁 ระบบรีเซ็ตคิวกลับเป็น 0 แล้ว");
       return res.status(200).json({ success: true, message: "Queue reset" });
     }
 
-    // กรณีเป็นข้อความออเดอร์ทั่วไป
-    queueCounter += 1;
-    const messageWithQueue = `📦 คิวที่ ${queueCounter}\n${message}`;
-
-    await sendLineMessage(messageWithQueue);
-    res.status(200).json({ success: true });
+    // ถ้าไม่ใช่คำสั่งรีเซ็ต ก็ไม่ทำอะไร
+    res.status(200).json({ success: true, message: "No action taken" });
   } catch (err) {
     console.error("Error in send-line.js:", err);
     res.status(500).json({ success: false, error: err.message });
@@ -26,8 +26,8 @@ export default async function handler(req, res) {
 
 // ฟังก์ชันส่งข้อความไปยัง LINE
 async function sendLineMessage(text) {
-  const token = process.env.LINE_TOKEN; // ใช้ Channel access token ของคุณ
-  const userId = process.env.LINE_USER_ID; // กำหนดใน .env ด้วย
+  const token = process.env.LINE_TOKEN; // เก็บใน .env
+  const userId = "Ua74514c2f5500bca939e5db00814c436"; // User ของคุณ
 
   const response = await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
