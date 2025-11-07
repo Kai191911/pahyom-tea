@@ -26,7 +26,7 @@ async function sendLineMessage(text) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`
+      "Authorization": `Bearer 5xb4NTQxMBbeHkKFIkLfpkoIwbaoBpuKrPuI5wEl+9GL2YAMimH6MCZuLInvR7A58jjkhy2pyXW201jWkBXl2CUa8QyylOBZhOkiowVIbGSuZBhgVZQR+TQl4OLTiAp05x1KrF0fFem6wVau85K0zAdB04t89/1O/w1cDnyilFU=`
     },
     body: JSON.stringify({
       to: "Ua74514c2f5500bca939e5db00814c436", // userId ของคุณ
