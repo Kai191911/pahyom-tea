@@ -450,47 +450,69 @@
     document.getElementById('orderDialog').style.display = 'none';
   }
 
-  async function sendOrder(){
-  const name = document.getElementById('custName').value || '-';
-  const note = document.getElementById('custTable').value || '-';
+// ========== Message Queue System ==========
+const messageQueue = [];
+let sending = false;
+
+async function queueMessage(message) {
+  messageQueue.push(message);
+  if (!sending) processQueue();
+}
+
+async function processQueue() {
+  if (sending) return;
+  sending = true;
+
+  while (messageQueue.length > 0) {
+    const msg = messageQueue.shift();
+    await sendToLine(msg);
+    await new Promise(r => setTimeout(r, 500)); // หน่วง 1 วิ กันยิงเร็วเกิน
+  }
+
+  sending = false;
+}
+
+async function sendToLine(message) {
+  const res = await fetch("https://pahyom-tea.vercel.app/api/send-line", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message })
+  });
+  if (!res.ok) {
+    console.error("❌ ส่งไม่สำเร็จ:", await res.text());
+  } else {
+    console.log("✅ ส่งสำเร็จ:", message);
+  }
+}
+
+
+// ========== ฟังก์ชันส่งออเดอร์ ==========
+async function sendOrder() {
   const payload = {
     shop: "ร้านน้ำชาพะยอม",
-    customer: name,
-    note: note,
-    items: cart.map(c=> ({
-      name:c.name, qty:c.qty, temp:c.temp, cream:c.cream, toppings:c.toppings, price:c.total
+    items: cart.map(c => ({
+      name: c.name, qty: c.qty, temp: c.temp, cream: c.cream, toppings: c.toppings, price: c.total
     })),
-    total: cart.reduce((s,c)=> s + c.total,0),
+    total: cart.reduce((s, c) => s + c.total, 0),
     created: new Date().toLocaleString('th-TH')
   };
 
-  // 🧋 สร้างข้อความส่งเข้า LINE
-  const message = 
-    `🧋 สรุปออเดอร์จาก ${payload.shop}\n` +
-    `👤 ลูกค้า: ${payload.customer}\n` +
-    `🪑 โต๊ะ/หมายเหตุ: ${payload.note}\n\n` +
+  // 🧋 สร้างข้อความส่งเข้า LINE (ตัดชื่อและหมายเหตุออก)
+  const message =
+    `🧋 ออเดอร์ใหม่จาก ${payload.shop}\n\n` +
     payload.items.map(i =>
-      `• ${i.name} (${i.temp}) x${i.qty}\n  ${i.cream} ${i.toppings.length? '· ' + i.toppings.join(', ') : ''}\n  💵 ${i.price} บาท`
+      `• ${i.name} (${i.temp}) x${i.qty}\n  ${i.cream} ${i.toppings.length ? '· ' + i.toppings.join(', ') : ''}\n  💵 ${i.price} บาท`
     ).join('\n\n') +
     `\n\n💰 รวมทั้งหมด: ${payload.total} บาท\n🕓 ${payload.created}`;
 
-  // 🚀 เรียก API ของ LINE
-  const res = await fetch("https://pahyom-tea.vercel.app/api/send-line", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ message })
-});
+  // ✅ ส่งเข้าคิวแทนการยิงตรง
+  await queueMessage(message);
 
-
-  if (res.ok) {
-    closeOrder();
-    cart = [];
-    updateCartBar();
-    showSummary(payload);
-  } else {
-    alert("เกิดข้อผิดพลาดในการส่งไป LINE ❌");
-    console.error(await res.text());
-  }
+  // ล้างข้อมูลและปิดหน้าสรุป
+  closeOrder();
+  cart = [];
+  updateCartBar();
+  showSummary(payload);
 }
 
 
@@ -526,4 +548,3 @@
 
 </body>
 </html>
-
