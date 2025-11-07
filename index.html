@@ -489,25 +489,28 @@ async function sendToLine(message) {
 // ========== ฟังก์ชันส่งออเดอร์ ==========
 async function sendOrder() {
   const payload = {
-    shop: "",
     items: cart.map(c => ({
-      name: c.name, qty: c.qty, temp: c.temp, cream: c.cream, toppings: c.toppings, price: c.total
+      name: c.name,
+      qty: c.qty,
+      temp: c.temp,
+      cream: c.cream,
+      toppings: c.toppings,
+      price: c.total
     })),
     total: cart.reduce((s, c) => s + c.total, 0),
     created: new Date().toLocaleString('th-TH')
   };
 
-  // 🧋 สร้างข้อความหลัก
+  // 🧋 สร้างข้อความออเดอร์
   let message =
-    `🧋 ออเดอร์ใหม่ ${payload.shop}\n\n` +
     payload.items.map(i =>
       `• ${i.name} (${i.temp}) x${i.qty}\n  ${i.cream} ${i.toppings.length ? '· ' + i.toppings.join(', ') : ''}\n  💵 ${i.price} บาท`
     ).join('\n\n') +
     `\n\n💰 รวมทั้งหมด: ${payload.total} บาท\n🕓 ${payload.created}`;
 
-  // 🪄 เพิ่มลำดับคิว (ก่อนส่งเข้าคิว)
+  // 🪄 เพิ่มคิวลูกค้า
   const queuePosition = messageQueue.length + 1;
-  message = `📦 คิวที่ ${queuePosition}\n` + message;
+  message = `📦 คิวลูกค้า ${queuePosition}\n\n${message}`;
 
   // ✅ ส่งเข้าคิวแทนการยิงตรง
   await queueMessage(message);
@@ -519,21 +522,25 @@ async function sendOrder() {
   showSummary(payload);
 }
 
-  function showSummary(payload){
-    // render a friendly message on screen
-    const box = document.createElement('div');
-    box.className = 'card';
-    box.style.position = 'fixed'; box.style.left='6%'; box.style.right='6%'; box.style.top='14%';
-    box.style.zIndex = '120';
-    box.innerHTML = `<h3>สั่งซื้อเรียบร้อย 🎉</h3>
-      <div style="font-size:14px;margin-top:6px">ขอบคุณคุณ <strong>${payload.customer}</strong></div>
-      <div style="margin-top:8px;font-weight:700">รวมทั้งหมด: ${payload.total} บาท</div>
-      <div style="font-size:13px;color:#3a6b3f;margin-top:8px">เวลาที่บันทึก: ${payload.created}</div>
-      <div style="margin-top:12px"><button onclick="this.parentElement.parentElement.remove()">ปิด</button></div>`;
-    document.body.appendChild(box);
-    // auto dismiss after 6s
-    setTimeout(()=>{ if(box.parentElement) box.remove(); }, 6000);
-  }
+
+function showSummary(payload) {
+  const box = document.createElement('div');
+  box.className = 'card';
+  box.style.position = 'fixed';
+  box.style.left = '6%';
+  box.style.right = '6%';
+  box.style.top = '14%';
+  box.style.zIndex = '120';
+  box.innerHTML = `
+    <h3>รับออเดอร์เรียบร้อย 🎉</h3>
+    <div style="margin-top:8px;font-weight:700">รวมทั้งหมด: ${payload.total} บาท</div>
+    <div style="font-size:13px;color:#3a6b3f;margin-top:8px">เวลาที่บันทึก: ${payload.created}</div>
+    <div style="margin-top:12px"><button onclick="this.parentElement.parentElement.remove()">ปิด</button></div>
+  `;
+  document.body.appendChild(box);
+  setTimeout(() => { if (box.parentElement) box.remove(); }, 6000);
+}
+
 
   /* ========== small helpers ========== */
   function toast(txt){
