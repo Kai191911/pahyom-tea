@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ร้านน้ำชาพะยอม — ตู้เต่าบิน (มือถือ)</title>
+  <title>ร้านน้ำชาพะยอม </title>
 
   <style>
     /* ========== Theme & base ========= */
@@ -450,25 +450,54 @@
     document.getElementById('orderDialog').style.display = 'none';
   }
 
-  function sendOrder(){
-    // build payload (for now: show summary and console.log)
-    const name = document.getElementById('custName').value || '-';
-    const note = document.getElementById('custTable').value || '-';
-    const payload = {
-      shop: "ร้านน้ำชาพะยอม",
-      customer: name,
-      note: note,
-      items: cart.map(c=> ({name:c.name, qty:c.qty, temp:c.temp, cream:c.cream, toppings:c.toppings, price:c.total})),
-      total: cart.reduce((s,c)=> s + c.total,0),
-      created: new Date().toLocaleString('th-TH')
-    };
-    // display friendly message
+  async function sendOrder(){
+  const name = document.getElementById('custName').value || '-';
+  const note = document.getElementById('custTable').value || '-';
+  const payload = {
+    shop: "ร้านน้ำชาพะยอม",
+    customer: name,
+    note: note,
+    items: cart.map(c=> ({
+      name:c.name, qty:c.qty, temp:c.temp, cream:c.cream, toppings:c.toppings, price:c.total
+    })),
+    total: cart.reduce((s,c)=> s + c.total,0),
+    created: new Date().toLocaleString('th-TH')
+  };
+
+  // 🧋 สร้างข้อความส่งเข้า LINE
+  const message = 
+    `🧋 สรุปออเดอร์จาก ${payload.shop}\n` +
+    `👤 ลูกค้า: ${payload.customer}\n` +
+    `🪑 โต๊ะ/หมายเหตุ: ${payload.note}\n\n` +
+    payload.items.map(i =>
+      `• ${i.name} (${i.temp}) x${i.qty}\n  ${i.cream} ${i.toppings.length? '· ' + i.toppings.join(', ') : ''}\n  💵 ${i.price} บาท`
+    ).join('\n\n') +
+    `\n\n💰 รวมทั้งหมด: ${payload.total} บาท\n🕓 ${payload.created}`;
+
+  // 🚀 เรียก API ของ LINE
+  const res = await fetch("https://api.line.me/v2/bot/message/push", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer 5xb4NTQxMBbeHkKFIkLfpkoIwbaoBpuKrPuI5wEl+9GL2YAMimH6MCZuLInvR7A58jjkhy2pyXW201jWkBXl2CUa8QyylOBZhOkiowVIbGSuZBhgVZQR+TQl4OLTiAp05x1KrF0fFem6wVau85K0zAdB04t89/1O/w1cDnyilFU=" // 👈 ใส่ token จริงของคุณ
+    },
+    body: JSON.stringify({
+      to: "Ua74514c2f5500bca939e5db00814c436", // 👈 ใส่ userId ของคุณ หรือ groupId ถ้าให้ส่งเข้ากลุ่ม
+      messages: [{ type: "text", text: message }]
+    })
+  });
+
+  if (res.ok) {
     closeOrder();
     cart = [];
     updateCartBar();
-    console.log("ส่งออเดอร์ (ตัวอย่าง payload):", payload);
     showSummary(payload);
+  } else {
+    alert("เกิดข้อผิดพลาดในการส่งไป LINE ❌");
+    console.error(await res.text());
   }
+}
+
 
   function showSummary(payload){
     // render a friendly message on screen
