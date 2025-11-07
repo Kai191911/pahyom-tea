@@ -489,7 +489,7 @@ async function sendToLine(message) {
 // ========== ฟังก์ชันส่งออเดอร์ ==========
 async function sendOrder() {
   const payload = {
-    shop: "ร้านน้ำชาพะยอม",
+    shop: "",
     items: cart.map(c => ({
       name: c.name, qty: c.qty, temp: c.temp, cream: c.cream, toppings: c.toppings, price: c.total
     })),
@@ -497,13 +497,17 @@ async function sendOrder() {
     created: new Date().toLocaleString('th-TH')
   };
 
-  // 🧋 สร้างข้อความส่งเข้า LINE (ตัดชื่อและหมายเหตุออก)
-  const message =
-    `🧋 ออเดอร์ใหม่จาก ${payload.shop}\n\n` +
+  // 🧋 สร้างข้อความหลัก
+  let message =
+    `🧋 ออเดอร์ใหม่ ${payload.shop}\n\n` +
     payload.items.map(i =>
       `• ${i.name} (${i.temp}) x${i.qty}\n  ${i.cream} ${i.toppings.length ? '· ' + i.toppings.join(', ') : ''}\n  💵 ${i.price} บาท`
     ).join('\n\n') +
     `\n\n💰 รวมทั้งหมด: ${payload.total} บาท\n🕓 ${payload.created}`;
+
+  // 🪄 เพิ่มลำดับคิว (ก่อนส่งเข้าคิว)
+  const queuePosition = messageQueue.length + 1;
+  message = `📦 คิวที่ ${queuePosition}\n` + message;
 
   // ✅ ส่งเข้าคิวแทนการยิงตรง
   await queueMessage(message);
@@ -514,7 +518,6 @@ async function sendOrder() {
   updateCartBar();
   showSummary(payload);
 }
-
 
   function showSummary(payload){
     // render a friendly message on screen
@@ -548,3 +551,6 @@ async function sendOrder() {
 
 </body>
 </html>
+
+
+https://pahyom-tea.vercel.app/ send
