@@ -1,36 +1,36 @@
-// /api/send-line.js
-let queueCounter = 0; // Global counter
+let queueCounter = 0;
 
 export default async function handler(req, res) {
+  console.log("✅ /api/send-line hit");
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   const { message } = req.body || {};
+  console.log("📨 Received message:", message);
 
-  if (!message || typeof message !== "string") {
-    return res.status(400).json({ error: "Invalid message" });
+  if (!message) {
+    return res.status(400).json({ error: "No message" });
   }
 
-  const cleaned = message.trim();
-
-  // ✅ รีเซ็ตคิว
-  if (cleaned === "รีคิว" || cleaned.toLowerCase() === "reset queue") {
+  // รีคิว
+  if (message.trim() === "รีคิว") {
     queueCounter = 0;
-    await sendLineMessage("🔁 ระบบรีเซ็ตคิวกลับเป็น 0 แล้ว");
+    await sendLineMessage("✅ รีเซ็ตคิวกลับเป็น 0 แล้ว");
     return res.status(200).json({ success: true });
   }
 
-  // ✅ เพิ่มคิวและส่งข้อความ
-  queueCounter += 1;
-  const fullMessage = `📦 คิวที่ ${queueCounter}\n${cleaned}`;
+  queueCounter++;
+  const full = `📦 คิวที่ ${queueCounter}\n${message}`;
 
   try {
-    await sendLineMessage(fullMessage);
+    await sendLineMessage(full);
+    console.log("✅ Push OK");
     return res.status(200).json({ success: true });
   } catch (err) {
-    console.error("❌ Send error:", err);
-    return res.status(500).json({ error: "Send failed" });
+    console.error("❌ Push Error:", err);
+    return res.status(500).json({ error: err.message });
   }
 }
 
@@ -38,11 +38,13 @@ async function sendLineMessage(text) {
   const token = process.env.LINE_TOKEN;
   const userId = process.env.LINE_USER_ID;
 
-  const response = await fetch("https://api.line.me/v2/bot/message/push", {
+  console.log("➡️ Sending to LINE:", userId);
+
+  const r = await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({
       to: userId,
@@ -50,8 +52,10 @@ async function sendLineMessage(text) {
     })
   });
 
-  if (!response.ok) {
-    const errTxt = await response.text();
-    throw new Error("LINE push failed: " + errTxt);
+  const body = await r.text();
+  console.log("🔎 LINE Response:", body);
+
+  if (!r.ok) {
+    throw new Error(body);
   }
 }
