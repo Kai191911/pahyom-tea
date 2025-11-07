@@ -6,7 +6,7 @@ export default async function handler(req, res) {
 
   const { message } = req.body;
 
-  const LINE_TOKEN = "ใส่ Channel Access Token ของคุณที่นี่";
+  const LINE_TOKEN = "5xb4NTQxMBbeHkKFIkLfpkoIwbaoBpuKrPuI5wEl+9GL2YAMimH6MCZuLInvR7A58jjkhy2pyXW201jWkBXl2CUa8QyylOBZhOkiowVIbGSuZBhgVZQR+TQl4OLTiAp05x1KrF0fFem6wVau85K0zAdB04t89/1O/w1cDnyilFU=";
 
   const lineRes = await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       "Authorization": `Bearer ${LINE_TOKEN}`,
     },
     body: JSON.stringify({
-      to: "ใส่ userId ของคุณ", // เช่น "Ua74514c2f5500bca939e5db00814c436"
+      to: "Ua74514c2f5500bca939e5db00814c436", // เช่น "Ua74514c2f5500bca939e5db00814c436"
       messages: [
         { type: "text", text: message }
       ],
