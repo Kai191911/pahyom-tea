@@ -1,33 +1,38 @@
+import { Redis } from "@upstash/redis";
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+  const { message } = req.body || {};
+
+  if (!message) {
+    return res.status(400).json({ error: "No message" });
   }
 
-  const { message } = req.body || {};
-  if (!message) return res.status(400).json({ error: "No message" });
-
-  // อ่านคิวปัจจุบันจาก ENV
-  let queue = parseInt(process.env.QUEUE_COUNTER || "0", 10);
-
-  // ถ้ามีคนพิมพ์ "รีคิว"
+  // รีคิว
   if (message.trim() === "รีคิว") {
-    await updateEnv("QUEUE_COUNTER", "0");
+    await redis.set("queueCounter", 0);
     await sendLineMessage("✅ รีเซ็ตคิวกลับเป็น 0 แล้ว");
     return res.json({ success: true });
   }
 
-  // เพิ่มคิว + อัปเดต ENV
+  // อ่านคิว
+  let queue = await redis.get("queueCounter");
+  if (!queue) queue = 0;
+
+  // เพิ่มคิว
   queue += 1;
-  await updateEnv("QUEUE_COUNTER", String(queue));
+  await redis.set("queueCounter", queue);
 
-  // ส่งข้อความเข้า LINE
-  const fullMessage = `📦 คิวที่ ${queue}\n${message}`;
-  await sendLineMessage(fullMessage);
+  const full = `📦 คิวที่ ${queue}\n${message}`;
+  await sendLineMessage(full);
 
-  return res.json({ success: true });
+  res.json({ success: true });
 }
 
-// ฟังก์ชันส่งข้อความเข้า LINE
 async function sendLineMessage(text) {
   await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
@@ -40,23 +45,4 @@ async function sendLineMessage(text) {
       messages: [{ type: "text", text }],
     }),
   });
-}
-
-// ฟังก์ชันอัปเดตค่า ENV ใน Vercel
-async function updateEnv(key, value) {
-  await fetch(
-    `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/env`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        value,
-        id: process.env[`ENV_${key}_ID`],
-        type: "plain",
-      }),
-    }
-  );
 }
