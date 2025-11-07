@@ -1,53 +1,36 @@
-let queueCounter = 0;
+// ตัวอย่าง /api/send-line.js
+let queueCounter = 0; // ตัวนับคิว (เก็บไว้ระดับ global)
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
-    return res.status(405).json({ success: false, message: `Method ${req.method} Not Allowed` });
+  const { message } = req.body;
+
+  // ถ้ามีการพิมพ์ "รีคิว" จากไลน์
+  if (message && (message.trim() === "รีคิว" || message.trim().toLowerCase() === "reset queue")) {
+    queueCounter = 0;
+    await sendLineMessage("🔁 ระบบรีเซ็ตคิวกลับเป็น 0 แล้ว");
+    return res.status(200).json({ success: true, message: "Queue reset" });
   }
 
-  try {
-    const { events } = req.body;
+  // กรณีเป็นข้อความออเดอร์ทั่วไป
+  queueCounter += 1;
+  const messageWithQueue = `📦 คิวที่ ${queueCounter}\n${message}`;
 
-    for (const event of events) {
-      if (event.type === "message" && event.message.type === "text") {
-        const userMessage = event.message.text.trim();
-        const replyToken = event.replyToken;
-
-        if (userMessage === "รีคิว") {
-          queueCounter = 0;
-          await replyLineMessage(replyToken, "🔁 ระบบรีเซ็ตคิวกลับเป็น 0 แล้ว");
-        } else {
-          queueCounter += 1;
-          const messageWithQueue = `📦 คิวที่ ${queueCounter}\n${userMessage}`;
-          await replyLineMessage(replyToken, messageWithQueue);
-        }
-      }
-    }
-
-    res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+  await sendLineMessage(messageWithQueue);
+  res.status(200).json({ success: true });
 }
 
-async function replyLineMessage(replyToken, text) {
-  const token = process.env.LINE_TOKEN;
-  const res = await fetch("https://api.line.me/v2/bot/message/reply", {
+// ฟังก์ชันส่งข้อความไปยัง LINE
+async function sendLineMessage(text) {
+  const token = process.env.LINE_TOKEN; // ใช้ Channel access token ของคุณ
+  await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      "Authorization": `Bearer ${token}`
     },
     body: JSON.stringify({
-      replyToken,
-      messages: [{ type: "text", text }],
-    }),
+      to: "Ua74514c2f5500bca939e5db00814c436", // userId ของคุณ
+      messages: [{ type: "text", text }]
+    })
   });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("LINE reply API error:", errorText);
-  }
 }
