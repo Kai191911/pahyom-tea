@@ -38,14 +38,14 @@ export default async function handler(req, res) {
     return res.json({ success: true });
   }
 
-  // ✅ จัดการคิว
+  // ✅ คิว
   let queue = await redis.get("queueCounter");
   if (!queue) queue = 0;
 
   queue = Number(queue) ;
   await redis.set("queueCounter", queue);
 
-  const full = `📦 คิวที่ ${queue}\n${message}`;
+  const full = `📦 มี ${queue} คิว`;
   await sendLineMessage(full);
 
   return res.json({ success: true });
