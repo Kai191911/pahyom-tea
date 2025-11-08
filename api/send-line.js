@@ -6,34 +6,33 @@ const redis = new Redis({
 });
 
 export default async function handler(req, res) {
-  const { message } = req.body || {};
-
-  if (!message) {
-    return res.status(400).json({ error: "No message" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // รีคิว
-  if (message.trim() === "รีคิว") {
-    await redis.set("queueCounter", 0);
-    await sendLineMessage("✅ รีเซ็ตคิวกลับเป็น 0 แล้ว");
-    return res.json({ success: true });
-  }
+  const { message, items } = req.body;
 
-  // อ่านคิว
-  let queue = await redis.get("queueCounter");
-  if (!queue) queue = 0;
+  // ✅ นับจำนวนแก้วรวมจากทุกเมนูในออเดอร์
+  const totalCups = items?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0;
 
-  // เพิ่มคิว
-  queue += 1;
-  await redis.set("queueCounter", queue);
+  // ✅ ดึงค่าปัจจุบันจาก Redis
+  let current = await redis.get("cupCounter");
+  if (!current) current = 0;
 
-  const full = `📦 คิวที่ ${queue}\n${message}`;
-  await sendLineMessage(full);
+  // ✅ บวกเพิ่ม
+  const newTotal = Number(current) + totalCups;
+  await redis.set("cupCounter", newTotal);
 
-  res.json({ success: true });
+  // ✅ ส่งข้อความแจ้ง LINE (รวมจำนวนแก้วด้วย)
+  const fullMessage = 
+    `🧋 ออเดอร์ใหม่เข้ามา!\n\n${message}\n\n🥤 รวมทั้งหมด ${newTotal} แก้ว`;
+
+  await sendLine(fullMessage);
+
+  return res.status(200).json({ success: true, totalCups: newTotal });
 }
 
-async function sendLineMessage(text) {
+async function sendLine(text) {
   await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
