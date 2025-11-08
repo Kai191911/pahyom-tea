@@ -376,18 +376,18 @@ function openSheet(item){
   document.getElementById('sheetTitle').innerText = item.name;
   document.getElementById('sheetBase').innerText = `ราคาเริ่มต้น: ${item.price} บาท`;
 
-  // ✅ ตั้งค่าเริ่มต้นสำหรับ temp (เลือกตัวแรก)
+  // ตั้งค่าเริ่มต้นสำหรับ temp
   const tempChips = document.querySelectorAll('#tempChips .chip');
   if (tempChips.length > 0) {
     tempChips.forEach((c, i) => c.classList.toggle('selected', i === 0));
     tempChips.forEach(c => c.classList.remove('selected'));
   }
 
-  // ✅ ตั้งค่าเริ่มต้นสำหรับ sweet (เลือก "หวานปกติ" ถ้ามี)
+  // ตั้งค่าเริ่มต้นสำหรับ sweet
   const sweetChips = document.querySelectorAll('#sweetChips .chip');
   sweetChips.forEach(c => c.classList.toggle('selected', c.dataset.val === 'หวานปกติ'));
 
-  // เคลียร์ค่าช่องป้อนเปอร์เซ็นต์
+  // เคลียร์ค่าช่องเปอร์เซ็นต์
   const sweetPercent = document.getElementById('sweetPercent');
   if(sweetPercent) sweetPercent.value = '';
 
@@ -612,7 +612,7 @@ async function sendOrder(){
   sweetPercent: c.sweetPercent || null,
   cream:c.cream,
   toppings:c.toppings,
-  note:c.note,     // ✅ ต้องเพิ่มอันนี้!
+  note:c.note,
   price:c.total
 })),
     total: cart.reduce((s,c)=> s+c.total,0),
@@ -621,16 +621,26 @@ async function sendOrder(){
 
     // 🧋 สร้างข้อความออเดอร์ (ไม่ต้องใส่คิวลูกค้า — server จะจัดการ)
   const message =
-    payload.items.map(i => 
-  `• ${i.name} (${i.temp}, ${i.sweet}${i.sweetPercent ? ' ' + i.sweetPercent : ''}) ×${i.qty}
-  ${i.cream}${i.toppings.length ? ' · ' + i.toppings.join(', ') : ''}
-  📌 หมายเหตุ: ${i.note || '-'}
-  💵 ${i.price} บาท`
-    ).join('\n\n') +
+    payload.items.map(i => {
+      const creamText = i.cream === 'ไม่ใส่ครีมชีท' ? '' : i.cream;
+      const toppingText = i.toppings.length ? ' · ' + i.toppings.join(', ') : '';
+      return `• ${i.name} (${i.temp}, ${i.sweet}${i.sweetPercent ? ' ' + i.sweetPercent : ''}) ×${i.qty}
+  ${[creamText, toppingText].filter(Boolean).join('')}
+  📌 หมายเหตุ : ${i.note || '-'}
+  💵  ${i.price} บาท`;
+    }).join('\n\n') +
     `\n\n💰 รวมทั้งหมด: ${payload.total} บาท\n🕓 ${payload.created}`;
 
 
-  await queueMessage(message);
+
+  await fetch("/api/send-line", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    message,
+    items: payload.items   // ✅ ส่งรายการสินค้าทั้งหมดไปให้ backend
+  })
+});
 
   closeOrder();
   cart = [];
@@ -688,9 +698,9 @@ function editItem(index){
 }
 
 function deleteItem(index){
-  cart.splice(index, 1);   // ✅ ลบออกจากตะกร้า
-  updateCartBar();         // ✅ อัปเดตแถบตะกร้าใหม่
-  openCart();              // ✅ เปิดตะกร้าใหม่หลังลบ เพื่อ refresh รายการ
+  cart.splice(index, 1);   // ลบออกจากตะกร้า
+  updateCartBar();         // อัปเดตแถบตะกร้าใหม่
+  openCart();              // เปิดตะกร้าใหม่หลังลบ เพื่อ refresh รายการ
   toast("ลบสินค้าแล้ว ❌");
 }
 
