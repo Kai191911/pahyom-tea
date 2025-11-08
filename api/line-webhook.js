@@ -15,16 +15,26 @@ export default async function handler(req, res) {
 
   const userMessage = event.message?.text?.trim();
 
-  // ถ้าผู้ใช้พิมพ์ "รีคิว"
-  if (userMessage && userMessage.includes("รีคิว")) {
+  if (!userMessage) return res.json({ ok: true });
+
+  // 🔹 รีคิว
+  if (userMessage.includes("รีคิว")) {
     await redis.set("queueCounter", 0);
     await replyToUser(event.replyToken, "✅ รีเซ็ตคิวกลับเป็น 0 แล้ว");
+    return res.json({ success: true });
+  }
+
+  // 🔹 จำนวนแก้ว
+  if (userMessage === "แก้ว") {
+    const cups = (await redis.get("cupCounter")) || 0;
+    await replyToUser(event.replyToken, `ตอนนี้ขายไปทั้งหมด ${cups} แก้ว 🧋`);
     return res.json({ success: true });
   }
 
   return res.json({ ok: true });
 }
 
+// ฟังก์ชันตอบกลับผู้ใช้
 async function replyToUser(replyToken, text) {
   await fetch("https://api.line.me/v2/bot/message/reply", {
     method: "POST",
