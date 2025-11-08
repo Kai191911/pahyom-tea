@@ -105,23 +105,19 @@
       position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:flex-end; justify-content:center;
       z-index:80; -webkit-backdrop-filter: blur(4px);
     }
-    .sheet{
-    width:100%;
-    max-width:520px;
-    background:#fff;
-    border-top-left-radius:18px;
-    border-top-right-radius:18px;
-    padding:14px 16px 30px;
-    box-shadow: 0 -8px 30px rgba(0,0,0,0.18);
-
+    .sheet{ width:100%; max-width:520px; background:#fff; border-top-left-radius:18px; border-top-right-radius:18px;
+    padding:0px 16px 30px; box-shadow: 0 -8px 30px rgba(0,0,0,0.18);
     max-height: 80vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-}
+    }
 
-    .sheet header{display:flex;gap:10px;align-items:center;}
-    .sheet h2{margin:0;font-size:18px;color:var(--green-dark);}
-    .close-x{margin-left:auto; background:#ffecec; color:#a80000;border-radius:10px;padding:6px;cursor:pointer;}
+    .sheet header { display: flex; gap: 10px; align-items: center; background: #4fb64f; color: #fff; margin: 0 -16px 0px ; border-top-left-radius: 1px; border-top-right-radius: 1px;
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .sheet h2{margin:0;font-size:18px;color:var(--cream);}
+    .close-x{margin-left:auto; background:#ff4848; color:#ffffff;border-radius:10px;padding:6px;cursor:pointer;}
     .choice-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
     .chip{
       padding:8px 10px;border-radius:12px;background:#f8fff8;border:1px solid #e6f3e6; cursor:pointer;font-weight:600;color:var(--green-dark);
@@ -219,10 +215,12 @@
   <div class="overlay" id="overlay">
     <div class="sheet" role="dialog" aria-modal="true" id="sheet">
       <header>
-        <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(180deg,#fff,#f6fff6);display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-weight:700">แก้ว</div>
+        <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(180deg,#fff,#f6fff6);
+        display:flex;align-items:center;justify-content:center;color:var(--green-dark);font-weight:700;font-family: 'Sarabun', sans-serif;
+        ">แก้ว</div>
         <div>
           <h2 id="sheetTitle">ชื่อเมนู</h2>
-          <div style="font-size:13px;color:#49664a" id="sheetBase">ราคาเริ่มต้น: 0 บาท</div>
+          <div style="font-size:13px;color:#ffffff" id="sheetBase">ราคาเริ่มต้น: 0 บาท</div>
         </div>
         <div class="close-x" onclick="closeSheet()">✕</div>
       </header>
@@ -245,8 +243,7 @@
       <div class="percent-box">
         <label for="sweetPercent">กำหนดความหวาน
           <input type="number" id="sweetPercent" placeholder="0-200" min="0" max="200"
-                 inputmode="numeric" pattern="[0-9]*" oninput="updateSweetPercent(this)">
-          %
+                 inputmode="numeric" pattern="[0-9]*" oninput="updateSweetPercent(this)">%
         </label>
       </div>
 
