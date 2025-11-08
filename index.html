@@ -25,7 +25,7 @@
       color: var(--text);
       background: linear-gradient(180deg,#f2fbf3 0%,#e8f6ea 100%);
       -webkit-font-smoothing: antialiased;
-}
+    }
 
     /* ========== Header (like kiosk top) ========= */
     header{
@@ -161,13 +161,22 @@
 .percent-box input { width: 80px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 6px; text-align: center;
     }
 
-
     /* responsive tweaks */
     @media(min-width:510px){
       header h1{font-size:20px;}
       .sheet{border-radius:12px;}
       .cart-bar{max-width:520px;left:auto;right:auto;bottom:20px; margin:0 auto;}
     }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+
   </style>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -371,6 +380,7 @@ function openSheet(item){
   const tempChips = document.querySelectorAll('#tempChips .chip');
   if (tempChips.length > 0) {
     tempChips.forEach((c, i) => c.classList.toggle('selected', i === 0));
+    tempChips.forEach(c => c.classList.remove('selected'));
   }
 
   // ✅ ตั้งค่าเริ่มต้นสำหรับ sweet (เลือก "หวานปกติ" ถ้ามี)
@@ -395,10 +405,15 @@ function closeSheet(){
 }
 
 function chooseChip(el){
-  document.querySelectorAll('#tempChips .chip').forEach(c=> c.classList.remove('selected'));
-  el.classList.add('selected');
+  if(el.classList.contains('selected')){
+    el.classList.remove('selected');
+  } else {
+    document.querySelectorAll('#tempChips .chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
   recalc();
 }
+
 
 function chooseSweetChip(el) {
   document.querySelectorAll('#sweetChips .chip').forEach(c => c.classList.remove('selected'));
