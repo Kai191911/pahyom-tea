@@ -6,36 +6,34 @@ const redis = new Redis({
 });
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
   const event = req.body.events?.[0];
-  if (!event) return res.status(200).json({ ok: true });
+  if (!event) return res.json({ ok: true });
 
-  const userMessage = event.message?.text?.trim();
+  const message = event.message?.text?.trim();
 
-  if (!userMessage) return res.json({ ok: true });
-
-  // 🔹 รีคิว
-  if (userMessage.includes("รีคิว")) {
-    await redis.set("queueCounter", 0);
-    await replyToUser(event.replyToken, "✅ รีเซ็ตคิวกลับเป็น 0 แล้ว");
+  // ✅ รีจำนวนแก้วด้วยคำว่า "รีแก้ว"
+  if (message === "รีแก้ว") {
+    await redis.set("cupCounter", 0);
+    await reply(event.replyToken, "✅ รีค่าแก้วกลับเป็น 0 แล้ว");
     return res.json({ success: true });
   }
 
-  // 🔹 จำนวนแก้ว
-  if (userMessage === "แก้ว") {
-    const cups = (await redis.get("cupCounter")) || 0;
-    await replyToUser(event.replyToken, `ตอนนี้ขายไปทั้งหมด ${cups} แก้ว 🧋`);
+  // ✅ ถ้าพิมพ์คำว่า "แก้ว"
+  if (message === "แก้ว") {
+    let cups = await redis.get("cupCounter");
+    if (!cups) cups = 0;
+
+    cups += 1;
+    await redis.set("cupCounter", cups);
+
+    await reply(event.replyToken, `🥤 ได้ ${cups} แก้ว`);
     return res.json({ success: true });
   }
 
   return res.json({ ok: true });
 }
 
-// ฟังก์ชันตอบกลับผู้ใช้
-async function replyToUser(replyToken, text) {
+async function reply(replyToken, text) {
   await fetch("https://api.line.me/v2/bot/message/reply", {
     method: "POST",
     headers: {
