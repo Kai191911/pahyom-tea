@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     let cups = await redis.get("cupCounter");
     if (!cups) cups = 0;
 
-    cups = Number(cups) + 1;
+    cups = Number(cups) ;
     await redis.set("cupCounter", cups);
 
     await reply(event.replyToken, `🥤 ตอนนี้ได้ ${cups} แก้ว`);
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   let queue = await redis.get("queueCounter");
   if (!queue) queue = 0;
 
-  queue = Number(queue) + 1;
+  queue = Number(queue) ;
   await redis.set("queueCounter", queue);
 
   const full = `📦 คิวที่ ${queue}\n${message}`;
