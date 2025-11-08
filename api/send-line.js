@@ -23,9 +23,17 @@ export default async function handler(req, res) {
   const newTotal = Number(current) + totalCups;
   await redis.set("cupCounter", newTotal);
 
+  // ✅ ดึงและเพิ่มคิวลูกค้า
+  let queue = await redis.get("queueCounter");
+  if (!queue) queue = 0;
+
+  const newQueue = Number(queue) + 1;
+  await redis.set("queueCounter", newQueue);
+
+  
   // ✅ ส่งข้อความแจ้ง LINE (รวมจำนวนแก้วด้วย)
   const fullMessage = 
-    `🧋 ออเดอร์ใหม่เข้ามา!\n\n${message}\n\n🥤 รวมทั้งหมด ${newTotal} แก้ว`;
+  `🧋 ออเดอร์ใหม่เข้ามา!\n\nคิวที่ ${newQueue}\n\n${message}\n\n🥤 รวมทั้งหมด ${newTotal} แก้ว`;
 
   await sendLine(fullMessage);
 
