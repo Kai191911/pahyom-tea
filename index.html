@@ -18,7 +18,14 @@
       --glass: rgba(255,255,255,0.85);
     }
 
-    html,body{height:100%;margin:0;font-family: "Prompt", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:var(--text); background:linear-gradient(180deg,#f2fbf3 0%,#e8f6ea 100%); -webkit-font-smoothing:antialiased;}
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Sarabun", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg,#f2fbf3 0%,#e8f6ea 100%);
+      -webkit-font-smoothing: antialiased;
+}
 
     /* ========== Header (like kiosk top) ========= */
     header{
@@ -103,7 +110,7 @@
     }
     .sheet header{display:flex;gap:10px;align-items:center;}
     .sheet h2{margin:0;font-size:18px;color:var(--green-dark);}
-    .close-x{margin-left:auto;background:#f6f6f6;border-radius:10px;padding:6px;cursor:pointer;}
+    .close-x{margin-left:auto; background:#ffecec; color:#a80000;border-radius:10px;padding:6px;cursor:pointer;}
     .choice-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
     .chip{
       padding:8px 10px;border-radius:12px;background:#f8fff8;border:1px solid #e6f3e6; cursor:pointer;font-weight:600;color:var(--green-dark);
@@ -148,6 +155,13 @@
     }
     .order-list{max-height:300px; overflow:auto; margin:8px 0; padding:6px; border-radius:8px; background:#fbfff8;}
 
+    .percent-box {margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 14px;
+    }
+
+.percent-box input { width: 80px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 6px; text-align: center;
+    }
+
+
     /* responsive tweaks */
     @media(min-width:510px){
       header h1{font-size:20px;}
@@ -155,6 +169,7 @@
       .cart-bar{max-width:520px;left:auto;right:auto;bottom:20px; margin:0 auto;}
     }
   </style>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -198,6 +213,23 @@
         <div class="chip selected" data-plus="10" data-val="ปั่น" onclick="chooseChip(this,'temp')">ปั่น +10</div>
       </div>
 
+      <!-- Sweetness -->
+      <div class="label">ระดับความหวาน</div>
+      <div class="choice-row" id="sweetChips">
+        <div class="chip" data-val="ไม่หวาน" data-plus="0" onclick="chooseSweetChip(this)">ไม่หวาน</div>
+        <div class="chip" data-val="หวานน้อย" data-plus="0" onclick="chooseSweetChip(this)">หวานน้อย</div>
+        <div class="chip " data-val="หวานปกติ" data-plus="0" onclick="chooseSweetChip(this)">หวานปกติ</div>
+        <div class="chip" data-val="หวานมาก" data-plus="0" onclick="chooseSweetChip(this)">หวานมาก</div>
+      </div>
+
+      <div class="percent-box">
+        <label for="sweetPercent">กำหนดความหวาน
+          <input type="number" id="sweetPercent" placeholder="0-200" min="0" max="200"
+                 inputmode="numeric" pattern="[0-9]*" oninput="updateSweetPercent(this)">
+          %
+        </label>
+      </div>
+
       <!-- Cream -->
       <div class="label">ครีมชีท</div>
       <div class="choice-row">
@@ -213,7 +245,7 @@
 
       <div class="label">เพิ่มเติม</div>
         <textarea id="noteInput"
-        style="width:100%; padding:10px; border-radius:10px; border:1px solid #d8e8d8; font-family:inherit;"></textarea>
+        style="width:95.5%; height: 40px; padding:10px; border-radius:10px; border:1px solid #a8cea8; font-family:inherit;"></textarea>
 
       <!-- Quantity & total -->
       <div class="label">จำนวนแก้ว</div>
@@ -264,28 +296,35 @@
   </div>
 
 <script>
+
+const note = document.getElementById('noteInput');
+note.addEventListener('input', function() {
+  this.style.height = 'auto';        // รีเซ็ตความสูง
+  this.style.height = this.scrollHeight + 'px';
+  });
+
 /* ========== Data model ========== */
 const MENU = {
   "ชา": [
-    {name:"ชานม", price:30},
-    {name:"ชาเขียว", price:30},
-    {name:"ชาไทย", price:30},
-    {name:"ชามะนาว", price:30}
+    {name:"ชานม", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"},
+    {name:"ชาเขียว", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"},
+    {name:"ชาไทย", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"},
+    {name:"ชามะนาว", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"}
   ],
   "นม": [
-    {name:"นมสด", price:30},
-    {name:"โกโก้", price:35},
-    {name:"คาราเมลนม", price:30}
+    {name:"นมสด", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"},
+    {name:"โกโก้", price:35, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"},
+    {name:"คาราเมลนม", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"}
   ],
   "กาแฟ": [
-    {name:"กาแฟเย็น", price:30},
-    {name:"ลาเต้", price:30},
-    {name:"คาปูชิโน่", price:30}
+    {name:"กาแฟเย็น", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"},
+    {name:"ลาเต้", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"},
+    {name:"คาปูชิโน่", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"}
   ],
   "โซดา": [
-    {name:"บลูฮาวายโซดา", price:30},
-    {name:"สตรอว์เบอร์รี่โซดา", price:30},
-    {name:"เลมอนโซดา", price:30}
+    {name:"บลูฮาวายโซดา", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"},
+    {name:"สตรอว์เบอร์รี่โซดา", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"},
+    {name:"เลมอนโซดา", price:30, desc:"คำอธิบายสั้น ๆ หรือส่วนผสม"}
   ]
 };
 
@@ -314,7 +353,7 @@ function renderMenu(cat){
     el.className = 'card';
     el.innerHTML = `
       <h3>${item.name}</h3>
-      <p>คำอธิบายสั้น ๆ หรือส่วนผสม</p>
+      <p>${item.desc}</p>
       <div class="price"><div style="font-size:13px;color:#3a6b3f">เริ่มต้น</div><div class="value">${item.price} ฿</div></div>
     `;
     el.onclick = ()=> openSheet(item);
@@ -324,12 +363,26 @@ function renderMenu(cat){
 
 /* ========== Sheet ========= */
 function openSheet(item){
-  selected = {name:item.name, base:item.price};
+  selected = { name:item.name, base:item.price };
   document.getElementById('sheetTitle').innerText = item.name;
   document.getElementById('sheetBase').innerText = `ราคาเริ่มต้น: ${item.price} บาท`;
-  document.querySelectorAll('#tempChips .chip').forEach((c,i)=> c.classList.toggle('selected', i===0));
+
+  // ✅ ตั้งค่าเริ่มต้นสำหรับ temp (เลือกตัวแรก)
+  const tempChips = document.querySelectorAll('#tempChips .chip');
+  if (tempChips.length > 0) {
+    tempChips.forEach((c, i) => c.classList.toggle('selected', i === 0));
+  }
+
+  // ✅ ตั้งค่าเริ่มต้นสำหรับ sweet (เลือก "หวานปกติ" ถ้ามี)
+  const sweetChips = document.querySelectorAll('#sweetChips .chip');
+  sweetChips.forEach(c => c.classList.toggle('selected', c.dataset.val === 'หวานปกติ'));
+
+  // เคลียร์ค่าช่องป้อนเปอร์เซ็นต์
+  const sweetPercent = document.getElementById('sweetPercent');
+  if(sweetPercent) sweetPercent.value = '';
+
   document.getElementById('optCream').checked = false;
-  document.querySelectorAll('.top').forEach(t=> t.checked=false);
+  document.querySelectorAll('.top').forEach(t=>t.checked=false);
   document.getElementById('qtyInput').value = 1;
   document.getElementById('noteInput').value = "";
 
@@ -347,19 +400,50 @@ function chooseChip(el){
   recalc();
 }
 
+function chooseSweetChip(el) {
+  document.querySelectorAll('#sweetChips .chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('sweetPercent').value = '';
+  recalc();
+}
+
+
 function getSelectedTemp(){
   const el = document.querySelector('#tempChips .chip.selected');
-  return {val: el.dataset.val, plus: Number(el.dataset.plus || 0)};
+  if(!el) {
+    return { val: 'เย็น', plus: 0 };
+  }
+  return { val: el.dataset.val, plus: Number(el.dataset.plus || 0) };
 }
+
+function getSelectedSweet(){
+  const el = document.querySelector('#sweetChips .chip.selected');
+  const percentInput = document.getElementById('sweetPercent');
+  const percent = percentInput.value ? `${percentInput.value}%` : '';
+  if(!el) return { val: 'หวานปกติ', percent, plus: 0 };
+  return { val: el.dataset.val, percent, plus: Number(el.dataset.plus || 0) };
+}
+
+// ถ้าใส่เลข % เอง ให้ยกเลิกการเลือกชิป
+function updateSweetPercent(el){
+  if(el.value !== ''){
+    document.querySelectorAll('#sweetChips .chip').forEach(c => c.classList.remove('selected'));
+  } else {
+    const defaultChip = document.querySelector('#sweetChips .chip[data-val="หวานปกติ"]');
+    if(defaultChip) defaultChip.classList.add('selected');  }
+  recalc();
+}
+
 
 function recalc(){
   if(!selected) return;
   const base = selected.base;
   const temp = getSelectedTemp();
+  const sweet = getSelectedSweet();
   const cream = document.getElementById('optCream').checked ? Number(document.getElementById('optCream').dataset.plus || 10) : 0;
   const toppings = Array.from(document.querySelectorAll('.top:checked')).reduce((s,t)=> s + Number(t.dataset.plus || 5), 0);
   const qty = Math.max(1, Number(document.getElementById('qtyInput').value || 1));
-  const total = (base + temp.plus + cream + toppings) * qty;
+  const total = (base + temp.plus + sweet.plus + cream + toppings) * qty;
   document.getElementById('sheetTotal').innerText = `ราคารวม: ${total} บาท`;
   return total;
 }
@@ -375,11 +459,12 @@ function changeQty(delta){
 function addToCart(){
   if(!selected) return;
   const temp = getSelectedTemp();
+  const sweet = getSelectedSweet();
   const cream = document.getElementById('optCream').checked ? 'ใส่ครีมชีท' : 'ไม่ใส่ครีมชีท';
   const toppings = Array.from(document.querySelectorAll('.top:checked')).map(t=> t.value);
   const qty = Math.max(1, Number(document.getElementById('qtyInput').value || 1));
   const total = recalc();
-  const note = document.getElementById('noteInput').value || "ไม่มีหมายเหตุ";
+  const note = document.getElementById('noteInput').value || "-";
 
   if (selected.index !== undefined) {
   // แก้ของเดิม
@@ -400,6 +485,8 @@ function addToCart(){
     name: selected.name,
     base: selected.base,
     temp: temp.val,
+    sweet: sweet.val,
+    sweetPercent: sweet.percent,
     cream,
     toppings,
     qty,
@@ -439,7 +526,7 @@ function openCart(){
     <span style="float:right;color:#2f6b34">${c.total} ฿</span>
   </div>
   <div style="font-size:13px;color:#47674f">
-    ${c.temp} · ${c.cream} · ${c.toppings.length ? c.toppings.join(', ') : 'ไม่มีท็อปปิ้ง'}
+    ${c.temp} · ${c.sweet || 'ปกติ'} ${c.sweetPercent ? `(${c.sweetPercent})` : ''} · ${c.cream} · ${c.toppings.length ? c.toppings.join(', ') : 'ไม่มีท็อปปิ้ง'}
     <br>📌 หมายเหตุ: ${c.note}
   </div>
 
@@ -506,6 +593,8 @@ async function sendOrder(){
   name:c.name,
   qty:c.qty,
   temp:c.temp,
+  sweet: c.sweet || null,
+  sweetPercent: c.sweetPercent || null,
   cream:c.cream,
   toppings:c.toppings,
   note:c.note,     // ✅ ต้องเพิ่มอันนี้!
@@ -515,15 +604,16 @@ async function sendOrder(){
     created: new Date().toLocaleString('th-TH')
   };
 
-  // 🧋 สร้างข้อความออเดอร์ (ไม่ต้องใส่คิวลูกค้า — server จะจัดการ)
+    // 🧋 สร้างข้อความออเดอร์ (ไม่ต้องใส่คิวลูกค้า — server จะจัดการ)
   const message =
-    payload.items.map(i =>
-  `• ${i.name} (${i.temp}) x${i.qty}
-  ${i.cream}${i.toppings.length ? '· ' + i.toppings.join(', ') : ''}
-  📌 หมายเหตุ: ${i.note}
+    payload.items.map(i => 
+  `• ${i.name} (${i.temp}, ${i.sweet}${i.sweetPercent ? ' ' + i.sweetPercent : ''}) ×${i.qty}
+  ${i.cream}${i.toppings.length ? ' · ' + i.toppings.join(', ') : ''}
+  📌 หมายเหตุ: ${i.note || '-'}
   💵 ${i.price} บาท`
     ).join('\n\n') +
     `\n\n💰 รวมทั้งหมด: ${payload.total} บาท\n🕓 ${payload.created}`;
+
 
   await queueMessage(message);
 
